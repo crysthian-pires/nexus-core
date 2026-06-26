@@ -1,0 +1,69 @@
+### Listar todos (apenas ADMIN)
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+
+
+
+### Buscar por ID
+GET {{baseUrl}}/users/1
+Authorization: Bearer {{token}}
+
+
+
+### Atualizar nome e email
+PATCH {{baseUrl}}/users/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "João Atualizado",
+  "email": "joao.novo@email.com"
+}
+
+
+
+### Atualizar perfil
+PATCH {{baseUrl}}/users/1/profile
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "phone": "+5511999998888",
+  "birthDate": "1995-06-24"
+}
+
+
+
+### Desativar usuário (apenas ADMIN)
+DELETE {{baseUrl}}/users/1
+Authorization: Bearer {{token}}
+
+
+
+### Tentar email duplicado (deve retornar 409)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "João Duplicado",
+  "email": "joao@email.com",
+  "password": "123456"
+}
+
+
+
+### Buscar usuário inexistente (deve retornar 404)
+GET {{baseUrl}}/users/999
+Authorization: Bearer {{token}}
+
+
+
+### Tentar email já em uso no update (deve retornar 409)
+PATCH {{baseUrl}}/users/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "João",
+  "email": "joao@email.com"
+}
