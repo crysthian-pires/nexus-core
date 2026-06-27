@@ -1,0 +1,42 @@
+### Criar produto
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Para-brisa Civic 2020",
+  "description": "Para-brisa dianteiro Honda Civic 2020",
+  "price": 850.00,
+  "quantity": 5,
+  "category": "Para-brisa"
+}
+
+###
+
+### Listar produtos
+GET {{baseUrl}}/products
+Authorization: Bearer {{token}}
+
+###
+
+### Buscar produto por ID
+GET {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+
+###
+
+### Atualizar produto
+PATCH {{baseUrl}}/products/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "quantity": 10,
+  "price": 800.00
+}
+
+###
+
+### Desativar produto
+DELETE {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
