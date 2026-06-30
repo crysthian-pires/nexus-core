@@ -33,6 +33,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Grant execute permission for mvnw
         run: chmod +x ./mvnw
@@ -52,12 +53,14 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ghcr.io/nexus-core:latest .
-          docker push ghcr.io/nexus-core:latest
+          IMAGE_TAG="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]'):latest"
+          docker build -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
 
       - name: Install Railway CLI & Deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g @railway/cli
-          railway up --service nexus-core
+          IMAGE_TAG="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]'):latest"
+          railway service:update --project "${{ secrets.RAILWAY_PROJECT_ID }}" --service "${{ secrets.RAILWAY_SERVICE_ID }}" --image $IMAGE_TAG
