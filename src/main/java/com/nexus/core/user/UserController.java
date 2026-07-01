@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -64,5 +65,33 @@ public class UserController {
     public ResponseEntity<Void> deactivateUser(@PathVariable Long id) {
         userService.deactivate(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Meus dados", description = "Retorna os dados do usuário autenticado")
+    @SecurityRequirement(name = "Bearer Token")
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getMe(Authentication authentication) {
+        UserModel user = (UserModel) authentication.getPrincipal();
+        return ResponseEntity.ok(new UserResponseDTO(user));
+    }
+
+    @Operation(summary = "Atualizar meus dados", description = "Atualiza nome e email do usuário autenticado")
+    @SecurityRequirement(name = "Bearer Token")
+    @PatchMapping("/me")
+    public ResponseEntity<UserUpdateResponseDTO> updateMe(
+            Authentication authentication,
+            @Valid @RequestBody UserUpdateDTO dto) {
+        UserModel user = (UserModel) authentication.getPrincipal();
+        return ResponseEntity.ok(userService.update(user.getId(), dto));
+    }
+
+    @Operation(summary = "Atualizar meu perfil", description = "Atualiza telefone e data de nascimento do usuário autenticado")
+    @SecurityRequirement(name = "Bearer Token")
+    @PatchMapping("/me/profile")
+    public ResponseEntity<UserResponseDTO> updateMyProfile(
+            Authentication authentication,
+            @Valid @RequestBody UserProfileUpdateDTO dto) {
+        UserModel user = (UserModel) authentication.getPrincipal();
+        return ResponseEntity.ok(userService.updateProfile(user.getId(), dto));
     }
 }

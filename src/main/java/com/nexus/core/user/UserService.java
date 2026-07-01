@@ -72,4 +72,10 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
+
+    public UserResponseDTO findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(UserResponseDTO::new)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+    }
 }
