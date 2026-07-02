@@ -33,5 +33,8 @@ build/
 .vscode/
 
 ### https ###
-src/main/resources/http/
+src/main/resources/http/*
 http/
+
+### SQL ###
+src/main/resources/sql/*
