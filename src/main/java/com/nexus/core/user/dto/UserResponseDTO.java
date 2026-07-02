@@ -12,7 +12,8 @@ public record UserResponseDTO(
         String phone,
         LocalDate birthDate,
         boolean active,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String role
 ) {
     public UserResponseDTO(UserModel user) {
         this(
@@ -22,7 +23,8 @@ public record UserResponseDTO(
                 user.getPhone(),
                 user.getBirthDate(),
                 user.isActive(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getRole().name()
         );
     }
 }
