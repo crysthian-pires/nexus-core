@@ -77,6 +77,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (xfHeader == null || xfHeader.isEmpty()) {
             return request.getRemoteAddr();
         }
-        return xfHeader.split(",")[0].trim();
+        String[] ips = xfHeader.split(",");
+        return ips[ips.length - 1].trim();
     }
 }
