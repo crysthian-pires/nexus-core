@@ -110,7 +110,7 @@ class UserServiceTest {
         UserUpdateDTO dto = new UserUpdateDTO("João Atualizado", "novo@email.com");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmail("novo@email.com")).thenReturn(false);
+        when(userRepository.findByEmail("novo@email.com")).thenReturn(Optional.empty());
         when(userRepository.save(any(UserModel.class))).thenReturn(user);
         when(jwtService.generateToken(any(UserModel.class))).thenReturn("novo_token");
 
@@ -124,9 +124,11 @@ class UserServiceTest {
     @DisplayName("Deve lançar exceção ao atualizar para email já em uso")
     void update_emailAlreadyExists() {
         UserUpdateDTO dto = new UserUpdateDTO("João", "existente@email.com");
-
+        UserModel outroUsuario = new UserModel();
+        outroUsuario.setId(2L);
+        outroUsuario.setEmail("existente@email.com");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmail("existente@email.com")).thenReturn(true);
+        when(userRepository.findByEmail("existente@email.com")).thenReturn(Optional.of(outroUsuario));
 
         assertThatThrownBy(() -> userService.update(1L, dto))
                 .isInstanceOf(EmailAlreadyExistsException.class);
@@ -163,5 +165,20 @@ class UserServiceTest {
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).email()).isEqualTo("joao@email.com");
+    }
+
+    @Test
+    @DisplayName("Deve permitir reenviar o próprio email sem lançar exceção")
+    void update_sameEmailAsOwn_doesNotThrow() {
+        UserUpdateDTO dto = new UserUpdateDTO("João Silva", "joao@email.com"); // mesmo email do user do setUp()
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("joao@email.com")).thenReturn(Optional.of(user)); // é ele mesmo
+        when(userRepository.save(any(UserModel.class))).thenReturn(user);
+        when(jwtService.generateToken(any(UserModel.class))).thenReturn("token");
+
+        UserUpdateResponseDTO response = userService.update(1L, dto);
+
+        assertThat(response).isNotNull();
     }
 }

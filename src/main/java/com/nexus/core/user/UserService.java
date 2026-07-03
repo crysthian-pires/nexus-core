@@ -45,7 +45,9 @@ public class UserService {
         UserModel user = findUserById(id);
         if (dto.name() != null) user.setName(dto.name());
         if (dto.email() != null) {
-            if (userRepository.existsByEmail(dto.email())) {
+            boolean emailTaken = userRepository.findByEmail(dto.email())
+                    .filter(existing -> !existing.getId().equals(id)).isPresent();
+            if(emailTaken){
                 throw new EmailAlreadyExistsException(dto.email());
             }
             user.setEmail(dto.email());

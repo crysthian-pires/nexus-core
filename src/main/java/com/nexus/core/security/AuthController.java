@@ -4,6 +4,7 @@ import com.nexus.core.user.UserRepository;
 import com.nexus.core.user.dto.UserLoginDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,7 +28,7 @@ public class AuthController {
 
     @Operation(summary = "Login", description = "Autentica o usuário e retorna access token e refresh token")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserLoginDTO dto) {
+    public ResponseEntity<?> login(@Valid @RequestBody UserLoginDTO dto) {
         return userRepository.findByEmail(dto.email())
                 .filter(user -> passwordEncoder.matches(dto.password(), user.getPassword()))
                 .map(user -> {

@@ -14,12 +14,18 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(
+    public ResponseEntity<Map<String, Object>> handleValidationErrors(
             MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
+        Map<String, String> fields = new HashMap<>();
+
         ex.getBindingResult().getFieldErrors()
-                .forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+                .forEach(err -> fields.put(err.getField(), err.getDefaultMessage()));
+
+        body.put("error", fields.values().stream().findFirst().orElse("Dados inválidos"));
+        body.put("fields", fields);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
