@@ -4,6 +4,7 @@ import com.nexus.core.exception.CustomerNotFoundException;
 import com.nexus.core.customer.dto.CustomerRequestDTO;
 import com.nexus.core.customer.dto.CustomerResponseDTO;
 import com.nexus.core.customer.dto.CustomerUpdateDTO;
+import com.nexus.core.exception.DocumentAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,9 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
 
     public CustomerResponseDTO create(CustomerRequestDTO dto) {
+        if (dto.document() != null && customerRepository.existsByDocument(dto.document())){
+            throw new DocumentAlreadyExistsException(dto.document());
+        }
         CustomerModel customer = new CustomerModel();
         customer.setName(dto.name());
         customer.setEmail(dto.email());
@@ -48,7 +52,13 @@ public class CustomerService {
         if (dto.name() != null) customer.setName(dto.name());
         if (dto.email() != null) customer.setEmail(dto.email());
         if (dto.phone() != null) customer.setPhone(dto.phone());
-        if (dto.document() != null) customer.setDocument(dto.document());
+        if (dto.document() != null){
+            boolean documentTaken = customerRepository.existsByDocumentAndIdNot(dto.document(), id);
+            if (documentTaken){
+                throw new DocumentAlreadyExistsException(dto.document());
+            }
+            customer.setDocument(dto.document());
+        }
         if (dto.notes() != null) customer.setNotes(dto.notes());
         return new CustomerResponseDTO(customerRepository.save(customer));
     }

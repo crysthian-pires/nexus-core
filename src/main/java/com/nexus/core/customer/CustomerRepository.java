@@ -7,4 +7,6 @@ import java.util.List;
 public interface CustomerRepository extends JpaRepository<CustomerModel, Long> {
     List<CustomerModel> findByActiveTrue();
     List<CustomerModel> findByNameContainingIgnoreCaseAndActiveTrue(String name);
+    boolean existsByDocument (String document);
+    boolean existsByDocumentAndIdNot (String document, Long id);
 }
