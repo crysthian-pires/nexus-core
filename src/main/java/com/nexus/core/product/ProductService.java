@@ -1,5 +1,6 @@
 package com.nexus.core.product;
 
+import com.nexus.core.exception.ProductNameAlreadyExistsException;
 import com.nexus.core.exception.ProductNotFoundException;
 import com.nexus.core.product.dto.ProductRequestDTO;
 import com.nexus.core.product.dto.ProductResponseDTO;
@@ -16,6 +17,10 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     public ProductResponseDTO create(ProductRequestDTO dto) {
+        if (productRepository.existsByNameIgnoreCaseAndActiveTrue(dto.name())){
+            throw new ProductNameAlreadyExistsException(dto.name());
+        }
+
         ProductModel product = new ProductModel();
         product.setName(dto.name());
         product.setDescription(dto.description());
@@ -38,7 +43,15 @@ public class ProductService {
 
     public ProductResponseDTO update(Long id, ProductUpdateDTO dto) {
         ProductModel product = findProductById(id);
-        if (dto.name() != null) product.setName(dto.name());
+
+        if (dto.name() != null) {
+            boolean nameTaken = productRepository.existsByNameIgnoreCaseAndActiveTrueAndIdNot(dto.name(), id);
+            if (nameTaken){
+                throw new ProductNameAlreadyExistsException(dto.name());
+            }
+            product.setName(dto.name());
+        }
+
         if (dto.description() != null) product.setDescription(dto.description());
         if (dto.price() != null) product.setPrice(dto.price());
         if (dto.quantity() != null) product.setQuantity(dto.quantity());

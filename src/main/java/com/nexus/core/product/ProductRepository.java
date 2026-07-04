@@ -7,4 +7,6 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<ProductModel, Long> {
     List<ProductModel> findByActiveTrue();
     List<ProductModel> findByCategoryAndActiveTrue(String category);
+    boolean existsByNameIgnoreCaseAndActiveTrue(String name);
+    boolean existsByNameIgnoreCaseAndActiveTrueAndIdNot(String name, Long id);
 }
