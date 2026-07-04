@@ -33,7 +33,7 @@ public class AuthController {
                 .filter(user -> passwordEncoder.matches(dto.password(), user.getPassword()))
                 .map(user -> {
                     String accessToken = jwtService.generateToken(user);
-                    String refreshToken = refreshTokenService.generate(user).getToken();
+                    String refreshToken = refreshTokenService.generate(user);
                     return ResponseEntity.ok(Map.of(
                             "accessToken", accessToken,
                             "refreshToken", refreshToken

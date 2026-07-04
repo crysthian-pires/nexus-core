@@ -2,6 +2,7 @@ package com.nexus.core.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public record UserLoginDTO(
 
@@ -10,6 +11,10 @@ public record UserLoginDTO(
         String email,
 
         @NotBlank(message = "A senha é obrigatória")
+        @Size(max=72, message = "Senha inválida")
         String password
 ) {
+        public UserLoginDTO {
+                email = email != null ? email.trim().toLowerCase() : null;
+        }
 }

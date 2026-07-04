@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,14 +56,19 @@ class RefreshTokenServiceTest {
     @Test
     @DisplayName("Deve gerar refresh token com sucesso")
     void generate_success() {
-        when(refreshTokenRepository.save(any(RefreshTokenModel.class))).thenReturn(validToken);
 
-        RefreshTokenModel result = refreshTokenService.generate(user);
-
-        assertThat(result).isNotNull();
-        assertThat(result.getUser()).isEqualTo(user);
+        String rawToken = refreshTokenService.generate(user);
+        assertThat(rawToken).isNotNull();
         verify(refreshTokenRepository).deleteByUser(user);
-        verify(refreshTokenRepository).save(any(RefreshTokenModel.class));
+        ArgumentCaptor<RefreshTokenModel> tokenCaptor = ArgumentCaptor.forClass(RefreshTokenModel.class);
+        verify(refreshTokenRepository).save(tokenCaptor.capture());
+        RefreshTokenModel savedToken = tokenCaptor.getValue();
+        assertThat(savedToken).isNotNull();
+        assertThat(savedToken.getUser()).isEqualTo(user);
+        assertThat(savedToken.getExpiresAt()).isAfter(LocalDateTime.now());
+        assertThat(savedToken.getToken()).isNotEqualTo(rawToken);
+        assertThat(savedToken.getToken()).hasSize(64);
+        assertThat(savedToken.getToken()).matches("^[0-9a-f]{64}$");
     }
 
     @Test
