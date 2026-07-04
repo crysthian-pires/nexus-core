@@ -1,0 +1,11 @@
+ALTER TABLE tb_products
+ALTER COLUMN name TYPE VARCHAR(100);
+
+ALTER TABLE tb_products
+ALTER COLUMN description TYPE VARCHAR(500);
+
+ALTER TABLE tb_products
+ALTER COLUMN category TYPE VARCHAR(60);
+
+ALTER TABLE tb_products
+ALTER COLUMN price TYPE NUMERIC(12, 2);
