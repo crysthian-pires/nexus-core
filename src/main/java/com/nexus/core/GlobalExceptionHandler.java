@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenStatusTransitionException.class)
     public ResponseEntity<Map<String, String>> handleEmailExists(
             ForbiddenStatusTransitionException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", ex.getMessage()));
     }
 
@@ -101,7 +101,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidFinalizationException.class)
     public ResponseEntity<Map<String, String>> handleAppointmentNotFound(
             InvalidFinalizationException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", ex.getMessage()));
     }
 }
