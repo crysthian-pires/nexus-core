@@ -49,6 +49,13 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(ForbiddenStatusTransitionException.class)
+    public ResponseEntity<Map<String, String>> handleEmailExists(
+            ForbiddenStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound(
             UserNotFoundException ex) {
@@ -87,6 +94,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppointmentNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleAppointmentNotFound(
             AppointmentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidFinalizationException.class)
+    public ResponseEntity<Map<String, String>> handleAppointmentNotFound(
+            InvalidFinalizationException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", ex.getMessage()));
     }

@@ -104,7 +104,7 @@ class ServiceOrderServiceTest {
         var response = serviceOrderService.listByCustomer(1L);
 
         assertThat(response).hasSize(1);
-        assertThat(response.get(0).customerId()).isEqualTo(1L);
+        assertThat(response.get(0).id()).isEqualTo(1L);
     }
 
     @Test
@@ -149,7 +149,7 @@ class ServiceOrderServiceTest {
         when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
-        ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto);
+        ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto, true);
 
         assertThat(response).isNotNull();
         verify(serviceOrderRepository).save(any(ServiceOrderModel.class));
@@ -165,7 +165,7 @@ class ServiceOrderServiceTest {
         when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
-        serviceOrderService.update(1L, dto);
+        serviceOrderService.update(1L, dto, true);
 
         assertThat(order.getCompletedAt()).isNotNull();
     }
@@ -177,7 +177,7 @@ class ServiceOrderServiceTest {
 
         when(serviceOrderRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> serviceOrderService.update(999L, dto))
+        assertThatThrownBy(() -> serviceOrderService.update(999L, dto, true))
                 .isInstanceOf(ServiceOrderNotFoundException.class);
     }
 }

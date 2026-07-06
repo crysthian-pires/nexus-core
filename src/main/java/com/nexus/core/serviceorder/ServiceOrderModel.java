@@ -24,14 +24,17 @@ public class ServiceOrderModel {
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerModel customer;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 2000)
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ServiceOrderStatus status = ServiceOrderStatus.PENDENTE;
 
+    @Column(precision = 12, scale = 2)
     private BigDecimal totalValue;
+
+    @Column(length = 1000)
     private String notes;
     private LocalDateTime completedAt;
 

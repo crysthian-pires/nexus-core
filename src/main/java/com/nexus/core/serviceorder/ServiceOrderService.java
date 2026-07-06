@@ -3,6 +3,8 @@ package com.nexus.core.serviceorder;
 import com.nexus.core.customer.CustomerModel;
 import com.nexus.core.customer.CustomerRepository;
 import com.nexus.core.exception.CustomerNotFoundException;
+import com.nexus.core.exception.ForbiddenStatusTransitionException;
+import com.nexus.core.exception.InvalidFinalizationException;
 import com.nexus.core.exception.ServiceOrderNotFoundException;
 import com.nexus.core.serviceorder.dto.ServiceOrderRequestDTO;
 import com.nexus.core.serviceorder.dto.ServiceOrderResponseDTO;
@@ -10,6 +12,7 @@ import com.nexus.core.serviceorder.dto.ServiceOrderUpdateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -58,7 +61,7 @@ public class ServiceOrderService {
         return new ServiceOrderResponseDTO(findOrderById(id));
     }
 
-    public ServiceOrderResponseDTO update(Long id, ServiceOrderUpdateDTO dto) {
+    public ServiceOrderResponseDTO update(Long id, ServiceOrderUpdateDTO dto, boolean isAdmin) {
         ServiceOrderModel order = findOrderById(id);
 
         if (dto.description() != null) order.setDescription(dto.description());
@@ -66,12 +69,29 @@ public class ServiceOrderService {
         if (dto.notes() != null) order.setNotes(dto.notes());
 
         if (dto.status() != null) {
-            order.setStatus(dto.status());
-            if (dto.status() == ServiceOrderStatus.FINALIZADO) {
-                order.setCompletedAt(LocalDateTime.now());
-            }
-        }
 
+            ServiceOrderStatus currentStatus = order.getStatus();
+            ServiceOrderStatus newStatus = dto.status();
+
+            if(newStatus != currentStatus){
+                boolean leavingTerminalState = currentStatus == ServiceOrderStatus.FINALIZADO
+                        || currentStatus == ServiceOrderStatus.CANCELADO;
+                if (leavingTerminalState && !isAdmin){
+                    throw new ForbiddenStatusTransitionException(currentStatus, newStatus);
+                }
+            }
+
+            if(newStatus == ServiceOrderStatus.FINALIZADO){
+                BigDecimal effectiveValue = order.getTotalValue();
+                    if (effectiveValue == null || effectiveValue.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new InvalidFinalizationException();
+                    }
+                    order.setCompletedAt(LocalDateTime.now());
+            }else if (currentStatus == ServiceOrderStatus.FINALIZADO){
+                order.setCompletedAt(null);
+            }
+            order.setStatus(newStatus);
+        }
         return new ServiceOrderResponseDTO(serviceOrderRepository.save(order));
     }
 
