@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -53,16 +54,16 @@ public class AppointmentController {
 
     @Operation(summary = "Atualizar agendamento")
     @PatchMapping("/{id}")
-    public ResponseEntity<AppointmentResponseDTO> update(
-            @PathVariable Long id,
-            @Valid @RequestBody AppointmentUpdateDTO dto) {
-        return ResponseEntity.ok(appointmentService.update(id, dto));
+    public ResponseEntity<AppointmentResponseDTO> update( @PathVariable Long id, @Valid @RequestBody AppointmentUpdateDTO dto, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(appointmentService.update(id, dto, isAdmin));
     }
 
     @Operation(summary = "Cancelar agendamento")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancel(@PathVariable Long id) {
-        appointmentService.cancel(id);
+    public ResponseEntity<Void> cancel(@PathVariable Long id, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        appointmentService.cancel(id, isAdmin);
         return ResponseEntity.noContent().build();
     }
 }

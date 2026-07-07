@@ -7,6 +7,7 @@ import com.nexus.core.exception.CustomerNotFoundException;
 import com.nexus.core.appointment.dto.AppointmentRequestDTO;
 import com.nexus.core.appointment.dto.AppointmentResponseDTO;
 import com.nexus.core.appointment.dto.AppointmentUpdateDTO;
+import com.nexus.core.exception.ForbiddenStatusTransitionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -155,7 +156,7 @@ class AppointmentServiceTest {
         when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointment));
         when(appointmentRepository.save(any(AppointmentModel.class))).thenReturn(appointment);
 
-        AppointmentResponseDTO response = appointmentService.update(1L, dto);
+        AppointmentResponseDTO response = appointmentService.update(1L, dto, true);
 
         assertThat(response).isNotNull();
         verify(appointmentRepository).save(any(AppointmentModel.class));
@@ -168,7 +169,7 @@ class AppointmentServiceTest {
 
         when(appointmentRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> appointmentService.update(999L, dto))
+        assertThatThrownBy(() -> appointmentService.update(999L, dto, true))
                 .isInstanceOf(AppointmentNotFoundException.class);
     }
 
@@ -177,7 +178,7 @@ class AppointmentServiceTest {
     void cancel_success() {
         when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointment));
 
-        appointmentService.cancel(1L);
+        appointmentService.cancel(1L, true);
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELADO);
         verify(appointmentRepository).save(appointment);
@@ -188,7 +189,56 @@ class AppointmentServiceTest {
     void cancel_notFound() {
         when(appointmentRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> appointmentService.cancel(999L))
+        assertThatThrownBy(() -> appointmentService.cancel(999L, true))
                 .isInstanceOf(AppointmentNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar sair de estado terminal sem ser ADMIN")
+    void update_leavingTerminalStateWithoutAdmin_throwsException() {
+        appointment.setStatus(AppointmentStatus.CONCLUIDO);
+
+        AppointmentUpdateDTO dto = new AppointmentUpdateDTO(
+                null, null, AppointmentStatus.AGENDADO, null, null
+        );
+
+        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointment));
+
+        assertThatThrownBy(() -> appointmentService.update(1L, dto, false))
+                .isInstanceOf(ForbiddenStatusTransitionException.class);
+
+        verify(appointmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("ADMIN deve conseguir sair de estado terminal normalmente")
+    void update_leavingTerminalStateAsAdmin_succeeds() {
+        appointment.setStatus(AppointmentStatus.CONCLUIDO);
+
+        AppointmentUpdateDTO dto = new AppointmentUpdateDTO(
+                null, null, AppointmentStatus.AGENDADO, null, null
+        );
+
+        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointment));
+        when(appointmentRepository.save(any(AppointmentModel.class))).thenReturn(appointment);
+
+        AppointmentResponseDTO response = appointmentService.update(1L, dto, true);
+
+        assertThat(response).isNotNull();
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.AGENDADO);
+        verify(appointmentRepository).save(any(AppointmentModel.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao cancelar agendamento já CONCLUIDO sem ser ADMIN")
+    void cancel_alreadyConcluded_withoutAdmin_throwsException() {
+        appointment.setStatus(AppointmentStatus.CONCLUIDO);
+
+        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointment));
+
+        assertThatThrownBy(() -> appointmentService.cancel(1L, false))
+                .isInstanceOf(ForbiddenStatusTransitionException.class);
+
+        verify(appointmentRepository, never()).save(any());
     }
 }

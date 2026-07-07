@@ -29,7 +29,7 @@ public class AppointmentModel {
     @JoinColumn(name = "service_order_id")
     private ServiceOrderModel serviceOrder;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 500)
     private String description;
 
     @Column(nullable = false)
@@ -39,11 +39,15 @@ public class AppointmentModel {
     @Column(nullable = false)
     private AppointmentStatus status = AppointmentStatus.AGENDADO;
 
+    @Column(precision = 12, scale = 2)
     private BigDecimal estimatedValue;
+
+    @Column(length = 1000)
     private String notes;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 
     @PrePersist

@@ -7,6 +7,7 @@ import com.nexus.core.exception.CustomerNotFoundException;
 import com.nexus.core.appointment.dto.AppointmentRequestDTO;
 import com.nexus.core.appointment.dto.AppointmentResponseDTO;
 import com.nexus.core.appointment.dto.AppointmentUpdateDTO;
+import com.nexus.core.exception.ForbiddenStatusTransitionException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -58,26 +59,39 @@ public class AppointmentService {
         return new AppointmentResponseDTO(findAppointmentById(id));
     }
 
-    public AppointmentResponseDTO update(Long id, AppointmentUpdateDTO dto) {
+    public AppointmentResponseDTO update(Long id, AppointmentUpdateDTO dto, boolean isAdmin) {
         AppointmentModel appointment = findAppointmentById(id);
 
         if (dto.description() != null) appointment.setDescription(dto.description());
         if (dto.scheduledAt() != null) appointment.setScheduledAt(dto.scheduledAt());
-        if (dto.status() != null) appointment.setStatus(dto.status());
+        if (dto.status() != null) {
+            applyStatusChange(appointment, dto.status(), isAdmin);
+        }
         if (dto.estimatedValue() != null) appointment.setEstimatedValue(dto.estimatedValue());
         if (dto.notes() != null) appointment.setNotes(dto.notes());
-
         return new AppointmentResponseDTO(appointmentRepository.save(appointment));
     }
 
-    public void cancel(Long id) {
+    public void cancel(Long id, boolean isAdmin) {
         AppointmentModel appointment = findAppointmentById(id);
-        appointment.setStatus(AppointmentStatus.CANCELADO);
+        applyStatusChange(appointment, AppointmentStatus.CANCELADO, isAdmin);
         appointmentRepository.save(appointment);
     }
 
     private AppointmentModel findAppointmentById(Long id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new AppointmentNotFoundException(id));
+    }
+
+    private void applyStatusChange(AppointmentModel appointment, AppointmentStatus newStatus, boolean isAdmin){
+        AppointmentStatus currentStatus = appointment.getStatus();
+        if (newStatus ==  currentStatus){
+            return;
+        }
+        boolean leavingTerminalState = currentStatus == AppointmentStatus.CONCLUIDO || currentStatus == AppointmentStatus.CANCELADO;
+        if (leavingTerminalState && !isAdmin) {
+            throw new ForbiddenStatusTransitionException(currentStatus, newStatus);
+        }
+        appointment.setStatus(newStatus);
     }
 }
