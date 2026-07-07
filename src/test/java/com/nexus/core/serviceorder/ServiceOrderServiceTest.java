@@ -3,6 +3,7 @@ package com.nexus.core.serviceorder;
 import com.nexus.core.customer.CustomerModel;
 import com.nexus.core.customer.CustomerRepository;
 import com.nexus.core.exception.CustomerNotFoundException;
+import com.nexus.core.exception.ForbiddenStatusTransitionException;
 import com.nexus.core.exception.ServiceOrderNotFoundException;
 import com.nexus.core.serviceorder.dto.ServiceOrderRequestDTO;
 import com.nexus.core.serviceorder.dto.ServiceOrderResponseDTO;
@@ -179,5 +180,41 @@ class ServiceOrderServiceTest {
 
         assertThatThrownBy(() -> serviceOrderService.update(999L, dto, true))
                 .isInstanceOf(ServiceOrderNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar sair de estado terminal sem ser ADMIN")
+    void update_leavingTerminalStateWithoutAdmin_throwsException() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+
+        ServiceOrderUpdateDTO dto = new ServiceOrderUpdateDTO(
+                null, ServiceOrderStatus.EM_EXECUCAO, null, null
+        );
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> serviceOrderService.update(1L, dto, false))
+                .isInstanceOf(ForbiddenStatusTransitionException.class);
+
+        verify(serviceOrderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("ADMIN deve conseguir sair de estado terminal normalmente")
+    void update_leavingTerminalStateAsAdmin_succeeds() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+
+        ServiceOrderUpdateDTO dto = new ServiceOrderUpdateDTO(
+                null, ServiceOrderStatus.EM_EXECUCAO, null, null
+        );
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
+
+        ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto, true);
+
+        assertThat(response).isNotNull();
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.EM_EXECUCAO);
+        verify(serviceOrderRepository).save(any(ServiceOrderModel.class));
     }
 }
