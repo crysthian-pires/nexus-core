@@ -35,7 +35,7 @@ public class RefreshTokenService {
     }
 
     public RefreshTokenModel validate(String token) {
-        return refreshTokenRepository.findByToken(token)
+        return refreshTokenRepository.findByToken(hash(token))
                 .filter(rt -> rt.getExpiresAt().isAfter(LocalDateTime.now()))
                 .orElseThrow(InvalidRefreshTokenException::new);
     }
