@@ -88,7 +88,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve listar todas as OS")
     void listAll_success() {
-        when(serviceOrderRepository.findByOrderByCreatedAtDesc()).thenReturn(List.of(order));
+        when(serviceOrderRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(List.of(order));
 
         var response = serviceOrderService.listAll();
 
@@ -99,7 +99,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve listar OS por cliente")
     void listByCustomer_success() {
-        when(serviceOrderRepository.findByCustomerIdOrderByCreatedAtDesc(1L))
+        when(serviceOrderRepository.findByCustomerIdAndActiveTrueOrderByCreatedAtDesc(1L))
                 .thenReturn(List.of(order));
 
         var response = serviceOrderService.listByCustomer(1L);
@@ -111,7 +111,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve listar OS por status")
     void listByStatus_success() {
-        when(serviceOrderRepository.findByStatusOrderByCreatedAtDesc(ServiceOrderStatus.PENDENTE))
+        when(serviceOrderRepository.findByStatusAndActiveTrueOrderByCreatedAtDesc(ServiceOrderStatus.PENDENTE))
                 .thenReturn(List.of(order));
 
         var response = serviceOrderService.listByStatus(ServiceOrderStatus.PENDENTE);
@@ -123,7 +123,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve buscar OS por ID com sucesso")
     void findById_success() {
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
 
         ServiceOrderResponseDTO response = serviceOrderService.findById(1L);
 
@@ -134,7 +134,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve lançar exceção ao buscar OS inexistente")
     void findById_notFound() {
-        when(serviceOrderRepository.findById(999L)).thenReturn(Optional.empty());
+        when(serviceOrderRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> serviceOrderService.findById(999L))
                 .isInstanceOf(ServiceOrderNotFoundException.class);
@@ -147,7 +147,7 @@ class ServiceOrderServiceTest {
                 null, ServiceOrderStatus.EM_EXECUCAO, null, null
         );
 
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
         ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto, true);
@@ -163,7 +163,7 @@ class ServiceOrderServiceTest {
                 null, ServiceOrderStatus.FINALIZADO, null, null
         );
 
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
         serviceOrderService.update(1L, dto, true);
@@ -176,7 +176,7 @@ class ServiceOrderServiceTest {
     void update_notFound() {
         ServiceOrderUpdateDTO dto = new ServiceOrderUpdateDTO(null, null, null, null);
 
-        when(serviceOrderRepository.findById(999L)).thenReturn(Optional.empty());
+        when(serviceOrderRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> serviceOrderService.update(999L, dto, true))
                 .isInstanceOf(ServiceOrderNotFoundException.class);
@@ -191,7 +191,7 @@ class ServiceOrderServiceTest {
                 null, ServiceOrderStatus.EM_EXECUCAO, null, null
         );
 
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> serviceOrderService.update(1L, dto, false))
                 .isInstanceOf(ForbiddenStatusTransitionException.class);
@@ -208,7 +208,7 @@ class ServiceOrderServiceTest {
                 null, ServiceOrderStatus.EM_EXECUCAO, null, null
         );
 
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
         ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto, true);

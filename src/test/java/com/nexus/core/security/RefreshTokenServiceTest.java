@@ -12,6 +12,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -43,12 +46,12 @@ class RefreshTokenServiceTest {
         user.setRole(Role.USER);
 
         validToken = new RefreshTokenModel();
-        validToken.setToken("token-valido");
+        validToken.setToken(hash("token-valido"));
         validToken.setUser(user);
         validToken.setExpiresAt(LocalDateTime.now().plusDays(7));
 
         expiredToken = new RefreshTokenModel();
-        expiredToken.setToken("token-expirado");
+        expiredToken.setToken(hash("token-expirado"));
         expiredToken.setUser(user);
         expiredToken.setExpiresAt(LocalDateTime.now().minusDays(1));
     }
@@ -74,19 +77,19 @@ class RefreshTokenServiceTest {
     @Test
     @DisplayName("Deve validar token válido com sucesso")
     void validate_success() {
-        when(refreshTokenRepository.findByToken("token-valido"))
+        when(refreshTokenRepository.findByToken(hash("token-valido")))
                 .thenReturn(Optional.of(validToken));
 
         RefreshTokenModel result = refreshTokenService.validate("token-valido");
 
         assertThat(result).isNotNull();
-        assertThat(result.getToken()).isEqualTo("token-valido");
+        assertThat(result.getToken()).isEqualTo(hash("token-valido"));
     }
 
     @Test
     @DisplayName("Deve lançar exceção para token inexistente")
     void validate_tokenNotFound() {
-        when(refreshTokenRepository.findByToken("token-invalido"))
+        when(refreshTokenRepository.findByToken(hash("token-invalido")))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> refreshTokenService.validate("token-invalido"))
@@ -96,7 +99,7 @@ class RefreshTokenServiceTest {
     @Test
     @DisplayName("Deve lançar exceção para token expirado")
     void validate_tokenExpired() {
-        when(refreshTokenRepository.findByToken("token-expirado"))
+        when(refreshTokenRepository.findByToken(hash("token-expirado")))
                 .thenReturn(Optional.of(expiredToken));
 
         assertThatThrownBy(() -> refreshTokenService.validate("token-expirado"))
@@ -109,5 +112,19 @@ class RefreshTokenServiceTest {
         refreshTokenService.revokeByUser(user);
 
         verify(refreshTokenRepository).deleteByUser(user);
+    }
+
+    private String hash(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 não disponível", e);
+        }
     }
 }
