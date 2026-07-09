@@ -64,13 +64,14 @@ public class CustomerService {
     }
 
     public void deactivate(Long id) {
-        CustomerModel customer = findCustomerById(id);
+        CustomerModel customer = customerRepository.findById(id)
+                .orElseThrow(() -> new CustomerNotFoundException(id));
         customer.setActive(false);
         customerRepository.save(customer);
     }
 
     private CustomerModel findCustomerById(Long id) {
-        return customerRepository.findById(id)
+        return customerRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new CustomerNotFoundException(id));
     }
 }

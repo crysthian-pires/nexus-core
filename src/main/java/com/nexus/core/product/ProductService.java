@@ -60,13 +60,14 @@ public class ProductService {
     }
 
     public void deactivate(Long id) {
-        ProductModel product = findProductById(id);
+        ProductModel product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
         product.setActive(false);
         productRepository.save(product);
     }
 
     private ProductModel findProductById(Long id) {
-        return productRepository.findById(id)
+        return productRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 }
