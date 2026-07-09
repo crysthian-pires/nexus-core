@@ -61,4 +61,12 @@ public class ServiceOrderController {
                                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
                 return ResponseEntity.ok(serviceOrderService.update(id, dto, isAdmin));
     }
+
+    @Operation(summary = "Cancelar OS")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancel(@PathVariable Long id, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        serviceOrderService.deactivate(id, isAdmin);
+        return ResponseEntity.noContent().build();
+    }
 }

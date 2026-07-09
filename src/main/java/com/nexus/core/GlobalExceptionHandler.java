@@ -104,4 +104,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(NonTerminalOrderDeletionException.class)
+    public ResponseEntity<Map<String, String>> handleNonTerminalDeletion(
+            NonTerminalOrderDeletionException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", ex.getMessage()));
+    }
 }

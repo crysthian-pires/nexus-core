@@ -1,11 +1,9 @@
 package com.nexus.core.serviceorder;
 
+import com.nexus.core.appointment.AppointmentStatus;
 import com.nexus.core.customer.CustomerModel;
 import com.nexus.core.customer.CustomerRepository;
-import com.nexus.core.exception.CustomerNotFoundException;
-import com.nexus.core.exception.ForbiddenStatusTransitionException;
-import com.nexus.core.exception.InvalidFinalizationException;
-import com.nexus.core.exception.ServiceOrderNotFoundException;
+import com.nexus.core.exception.*;
 import com.nexus.core.serviceorder.dto.ServiceOrderRequestDTO;
 import com.nexus.core.serviceorder.dto.ServiceOrderResponseDTO;
 import com.nexus.core.serviceorder.dto.ServiceOrderUpdateDTO;
@@ -37,21 +35,21 @@ public class ServiceOrderService {
     }
 
     public List<ServiceOrderResponseDTO> listAll() {
-        return serviceOrderRepository.findByOrderByCreatedAtDesc()
+        return serviceOrderRepository.findByActiveTrueOrderByCreatedAtDesc()
                 .stream()
                 .map(ServiceOrderResponseDTO::new)
                 .toList();
     }
 
     public List<ServiceOrderResponseDTO> listByCustomer(Long customerId) {
-        return serviceOrderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId)
+        return serviceOrderRepository.findByCustomerIdAndActiveTrueOrderByCreatedAtDesc(customerId)
                 .stream()
                 .map(ServiceOrderResponseDTO::new)
                 .toList();
     }
 
     public List<ServiceOrderResponseDTO> listByStatus(ServiceOrderStatus status) {
-        return serviceOrderRepository.findByStatusOrderByCreatedAtDesc(status)
+        return serviceOrderRepository.findByStatusAndActiveTrueOrderByCreatedAtDesc(status)
                 .stream()
                 .map(ServiceOrderResponseDTO::new)
                 .toList();
@@ -83,10 +81,10 @@ public class ServiceOrderService {
 
             if(newStatus == ServiceOrderStatus.FINALIZADO){
                 BigDecimal effectiveValue = order.getTotalValue();
-                    if (effectiveValue == null || effectiveValue.compareTo(BigDecimal.ZERO) <= 0) {
-                        throw new InvalidFinalizationException();
-                    }
-                    order.setCompletedAt(LocalDateTime.now());
+                if (effectiveValue == null || effectiveValue.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new InvalidFinalizationException();
+                }
+                order.setCompletedAt(LocalDateTime.now());
             }else if (currentStatus == ServiceOrderStatus.FINALIZADO){
                 order.setCompletedAt(null);
             }
@@ -95,8 +93,35 @@ public class ServiceOrderService {
         return new ServiceOrderResponseDTO(serviceOrderRepository.save(order));
     }
 
+    public void deactivate(Long id, boolean isAdmin) {
+        ServiceOrderModel order = findServiceOrder(id);
+        if (!isAdmin) {
+            throw new ForbiddenStatusTransitionException(order.getStatus(), AppointmentStatus.CANCELADO);
+        }
+
+        boolean isTerminal = order.getStatus() == ServiceOrderStatus.FINALIZADO
+                || order.getStatus() == ServiceOrderStatus.CANCELADO;
+
+        if (!isTerminal) {
+            throw new NonTerminalOrderDeletionException(order.getStatus());
+        }
+
+        if (Boolean.FALSE.equals(order.getActive())) {
+            return;
+        }
+
+        order.setActive(false);
+        serviceOrderRepository.save(order);
+    }
+
     private ServiceOrderModel findOrderById(Long id) {
+        return serviceOrderRepository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ServiceOrderNotFoundException(id));
+    }
+
+    private ServiceOrderModel findServiceOrder(Long id) {
         return serviceOrderRepository.findById(id)
                 .orElseThrow(() -> new ServiceOrderNotFoundException(id));
     }
+
 }
