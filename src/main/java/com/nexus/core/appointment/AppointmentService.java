@@ -85,13 +85,16 @@ public class AppointmentService {
 
     private void applyStatusChange(AppointmentModel appointment, AppointmentStatus newStatus, boolean isAdmin){
         AppointmentStatus currentStatus = appointment.getStatus();
-        if (newStatus ==  currentStatus){
-            return;
-        }
-        boolean leavingTerminalState = currentStatus == AppointmentStatus.CONCLUIDO || currentStatus == AppointmentStatus.CANCELADO;
-        if (leavingTerminalState && !isAdmin) {
+        boolean isTerminal = currentStatus == AppointmentStatus.CONCLUIDO || currentStatus == AppointmentStatus.CANCELADO;
+
+        if (isTerminal && !isAdmin) {
             throw new ForbiddenStatusTransitionException(currentStatus, newStatus);
         }
+
+        if (newStatus == currentStatus) {
+            return;
+        }
+
         appointment.setStatus(newStatus);
     }
 }
