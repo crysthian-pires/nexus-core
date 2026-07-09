@@ -42,6 +42,9 @@ public class ServiceOrderModel {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private Boolean active = true;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
