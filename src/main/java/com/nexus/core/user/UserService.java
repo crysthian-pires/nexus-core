@@ -3,6 +3,7 @@ package com.nexus.core.user;
 import com.nexus.core.exception.EmailAlreadyExistsException;
 import com.nexus.core.exception.UserNotFoundException;
 import com.nexus.core.security.JwtService;
+import com.nexus.core.security.RefreshTokenService;
 import com.nexus.core.user.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +18,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public UserResponseDTO create(UserSignUpDTO dto) {
         if (userRepository.existsByEmail(dto.email())) {
@@ -67,6 +69,7 @@ public class UserService {
     public void deactivate(Long id) {
         UserModel user = findUserById(id);
         user.setActive(false);
+        refreshTokenService.revokeByUser(user);
         userRepository.save(user);
     }
 
