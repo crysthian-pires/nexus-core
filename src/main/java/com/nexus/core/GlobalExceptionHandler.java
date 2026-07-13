@@ -1,8 +1,11 @@
 package com.nexus.core;
 
+import com.nexus.core.auth.exception.DisabledUserException;
 import com.nexus.core.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,21 +39,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ProductNameAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleEmailExists(
+    public ResponseEntity<Map<String, String>> handleProductNameExists (
             ProductNameAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(DocumentAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleEmailExists(
+    public ResponseEntity<Map<String, String>> handleDocumentExists(
             DocumentAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(ForbiddenStatusTransitionException.class)
-    public ResponseEntity<Map<String, String>> handleEmailExists(
+    public ResponseEntity<Map<String, String>> handleStatusTransition(
             ForbiddenStatusTransitionException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", ex.getMessage()));
@@ -110,5 +113,18 @@ public class GlobalExceptionHandler {
             NonTerminalOrderDeletionException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DisabledUserException.class)
+    public ResponseEntity<Map<String, String>> handleDisabledUser(
+            DisabledUserException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    public ResponseEntity<Map<String, String>> handleAuthFailure(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Credenciais inválidas"));
     }
 }
