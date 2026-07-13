@@ -217,4 +217,47 @@ class ServiceOrderServiceTest {
         assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.EM_EXECUCAO);
         verify(serviceOrderRepository).save(any(ServiceOrderModel.class));
     }
+
+    @Test
+    @DisplayName("Deve ser idempotente ao desativar OS já desativada (ADMIN)")
+    void deactivate_alreadyInactive_isIdempotent() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+        order.setActive(false);
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatCode(() -> serviceOrderService.deactivate(1L, true))
+                .doesNotThrowAnyException();
+
+        verify(serviceOrderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve desativar e salvar quando a OS terminal ainda está ativa")
+    void deactivate_activeTerminal_deactivatesAndSaves() {
+        order.setStatus(ServiceOrderStatus.CANCELADO);
+        order.setActive(true);
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
+
+        serviceOrderService.deactivate(1L, true);
+
+        assertThat(order.getActive()).isFalse();
+        verify(serviceOrderRepository).save(order);
+    }
+
+    @Test
+    @DisplayName("Não-ADMIN deve receber Forbidden mesmo se a OS já estiver desativada")
+    void deactivate_nonAdminOnAlreadyInactiveOrder_throwsForbidden() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+        order.setActive(false);
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> serviceOrderService.deactivate(1L, false))
+                .isInstanceOf(ForbiddenStatusTransitionException.class);
+
+        verify(serviceOrderRepository, never()).save(any());
+    }
 }
