@@ -3,6 +3,9 @@ package com.nexus.core.user;
 import com.nexus.core.exception.EmailAlreadyExistsException;
 import com.nexus.core.exception.UserNotFoundException;
 import com.nexus.core.security.JwtService;
+import com.nexus.core.security.RefreshTokenModel;
+import com.nexus.core.security.RefreshTokenRepository;
+import com.nexus.core.security.RefreshTokenService;
 import com.nexus.core.user.dto.UserResponseDTO;
 import com.nexus.core.user.dto.UserSignUpDTO;
 import com.nexus.core.user.dto.UserUpdateDTO;
@@ -16,11 +19,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -40,6 +47,10 @@ class UserServiceTest {
     private UserService userService;
 
     private UserModel user;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
 
     @BeforeEach
     void setUp() {
@@ -139,9 +150,7 @@ class UserServiceTest {
     @DisplayName("Deve desativar usuário com sucesso")
     void deactivate_success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
         userService.deactivate(1L);
-
         assertThat(user.isActive()).isFalse();
         verify(userRepository).save(user);
     }
@@ -150,7 +159,6 @@ class UserServiceTest {
     @DisplayName("Deve lançar exceção ao desativar usuário inexistente")
     void deactivate_notFound() {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> userService.deactivate(999L))
                 .isInstanceOf(UserNotFoundException.class);
     }
@@ -160,9 +168,7 @@ class UserServiceTest {
     @DisplayName("Deve listar todos os usuários")
     void listAll_success() {
         when(userRepository.findAll()).thenReturn(List.of(user));
-
         var response = userService.listAll();
-
         assertThat(response).hasSize(1);
         assertThat(response.get(0).email()).isEqualTo("joao@email.com");
     }
@@ -171,14 +177,23 @@ class UserServiceTest {
     @DisplayName("Deve permitir reenviar o próprio email sem lançar exceção")
     void update_sameEmailAsOwn_doesNotThrow() {
         UserUpdateDTO dto = new UserUpdateDTO("João Silva", "joao@email.com"); // mesmo email do user do setUp()
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findByEmail("joao@email.com")).thenReturn(Optional.of(user)); // é ele mesmo
         when(userRepository.save(any(UserModel.class))).thenReturn(user);
         when(jwtService.generateToken(any(UserModel.class))).thenReturn("token");
-
         UserUpdateResponseDTO response = userService.update(1L, dto);
-
         assertThat(response).isNotNull();
     }
+
+    @Test
+    @DisplayName("Deve revogar o acesso do usuário depois de desativa-lo")
+    void revoke_access_user_after_deactivate() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        userService.deactivate(1L);
+        assertThat(user.isActive()).isFalse();
+        verify(userRepository).save(user);
+        verify(refreshTokenService).revokeByUser(user);
+    }
+
+
 }
