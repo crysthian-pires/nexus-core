@@ -43,6 +43,8 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Run tests
+        env:
+          JWT_SECRET: test-secret-key-for-ci-only-not-used-anywhere-real
         run: ./mvnw clean test
 
   build-and-deploy:
