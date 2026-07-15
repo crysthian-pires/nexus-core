@@ -38,3 +38,7 @@ http/
 
 ### SQL ###
 src/main/resources/sql/*
+
+
+### Env ###
+.env

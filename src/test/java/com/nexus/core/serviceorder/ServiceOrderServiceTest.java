@@ -3,6 +3,7 @@ package com.nexus.core.serviceorder;
 import com.nexus.core.customer.CustomerModel;
 import com.nexus.core.customer.CustomerRepository;
 import com.nexus.core.exception.CustomerNotFoundException;
+import com.nexus.core.exception.ForbiddenStatusTransitionException;
 import com.nexus.core.exception.ServiceOrderNotFoundException;
 import com.nexus.core.serviceorder.dto.ServiceOrderRequestDTO;
 import com.nexus.core.serviceorder.dto.ServiceOrderResponseDTO;
@@ -87,7 +88,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve listar todas as OS")
     void listAll_success() {
-        when(serviceOrderRepository.findByOrderByCreatedAtDesc()).thenReturn(List.of(order));
+        when(serviceOrderRepository.findByActiveTrueOrderByCreatedAtDesc()).thenReturn(List.of(order));
 
         var response = serviceOrderService.listAll();
 
@@ -98,19 +99,19 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve listar OS por cliente")
     void listByCustomer_success() {
-        when(serviceOrderRepository.findByCustomerIdOrderByCreatedAtDesc(1L))
+        when(serviceOrderRepository.findByCustomerIdAndActiveTrueOrderByCreatedAtDesc(1L))
                 .thenReturn(List.of(order));
 
         var response = serviceOrderService.listByCustomer(1L);
 
         assertThat(response).hasSize(1);
-        assertThat(response.get(0).customerId()).isEqualTo(1L);
+        assertThat(response.get(0).id()).isEqualTo(1L);
     }
 
     @Test
     @DisplayName("Deve listar OS por status")
     void listByStatus_success() {
-        when(serviceOrderRepository.findByStatusOrderByCreatedAtDesc(ServiceOrderStatus.PENDENTE))
+        when(serviceOrderRepository.findByStatusAndActiveTrueOrderByCreatedAtDesc(ServiceOrderStatus.PENDENTE))
                 .thenReturn(List.of(order));
 
         var response = serviceOrderService.listByStatus(ServiceOrderStatus.PENDENTE);
@@ -122,7 +123,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve buscar OS por ID com sucesso")
     void findById_success() {
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
 
         ServiceOrderResponseDTO response = serviceOrderService.findById(1L);
 
@@ -133,7 +134,7 @@ class ServiceOrderServiceTest {
     @Test
     @DisplayName("Deve lançar exceção ao buscar OS inexistente")
     void findById_notFound() {
-        when(serviceOrderRepository.findById(999L)).thenReturn(Optional.empty());
+        when(serviceOrderRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> serviceOrderService.findById(999L))
                 .isInstanceOf(ServiceOrderNotFoundException.class);
@@ -146,10 +147,10 @@ class ServiceOrderServiceTest {
                 null, ServiceOrderStatus.EM_EXECUCAO, null, null
         );
 
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
-        ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto);
+        ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto, true);
 
         assertThat(response).isNotNull();
         verify(serviceOrderRepository).save(any(ServiceOrderModel.class));
@@ -162,10 +163,10 @@ class ServiceOrderServiceTest {
                 null, ServiceOrderStatus.FINALIZADO, null, null
         );
 
-        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
         when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
 
-        serviceOrderService.update(1L, dto);
+        serviceOrderService.update(1L, dto, true);
 
         assertThat(order.getCompletedAt()).isNotNull();
     }
@@ -175,9 +176,88 @@ class ServiceOrderServiceTest {
     void update_notFound() {
         ServiceOrderUpdateDTO dto = new ServiceOrderUpdateDTO(null, null, null, null);
 
-        when(serviceOrderRepository.findById(999L)).thenReturn(Optional.empty());
+        when(serviceOrderRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> serviceOrderService.update(999L, dto))
+        assertThatThrownBy(() -> serviceOrderService.update(999L, dto, true))
                 .isInstanceOf(ServiceOrderNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar sair de estado terminal sem ser ADMIN")
+    void update_leavingTerminalStateWithoutAdmin_throwsException() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+
+        ServiceOrderUpdateDTO dto = new ServiceOrderUpdateDTO(
+                null, ServiceOrderStatus.EM_EXECUCAO, null, null
+        );
+
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> serviceOrderService.update(1L, dto, false))
+                .isInstanceOf(ForbiddenStatusTransitionException.class);
+
+        verify(serviceOrderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("ADMIN deve conseguir sair de estado terminal normalmente")
+    void update_leavingTerminalStateAsAdmin_succeeds() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+
+        ServiceOrderUpdateDTO dto = new ServiceOrderUpdateDTO(
+                null, ServiceOrderStatus.EM_EXECUCAO, null, null
+        );
+
+        when(serviceOrderRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
+
+        ServiceOrderResponseDTO response = serviceOrderService.update(1L, dto, true);
+
+        assertThat(response).isNotNull();
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.EM_EXECUCAO);
+        verify(serviceOrderRepository).save(any(ServiceOrderModel.class));
+    }
+
+    @Test
+    @DisplayName("Deve ser idempotente ao desativar OS já desativada (ADMIN)")
+    void deactivate_alreadyInactive_isIdempotent() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+        order.setActive(false);
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatCode(() -> serviceOrderService.deactivate(1L, true))
+                .doesNotThrowAnyException();
+
+        verify(serviceOrderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve desativar e salvar quando a OS terminal ainda está ativa")
+    void deactivate_activeTerminal_deactivatesAndSaves() {
+        order.setStatus(ServiceOrderStatus.CANCELADO);
+        order.setActive(true);
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(serviceOrderRepository.save(any(ServiceOrderModel.class))).thenReturn(order);
+
+        serviceOrderService.deactivate(1L, true);
+
+        assertThat(order.getActive()).isFalse();
+        verify(serviceOrderRepository).save(order);
+    }
+
+    @Test
+    @DisplayName("Não-ADMIN deve receber Forbidden mesmo se a OS já estiver desativada")
+    void deactivate_nonAdminOnAlreadyInactiveOrder_throwsForbidden() {
+        order.setStatus(ServiceOrderStatus.FINALIZADO);
+        order.setActive(false);
+
+        when(serviceOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> serviceOrderService.deactivate(1L, false))
+                .isInstanceOf(ForbiddenStatusTransitionException.class);
+
+        verify(serviceOrderRepository, never()).save(any());
     }
 }

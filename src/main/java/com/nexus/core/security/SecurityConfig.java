@@ -42,13 +42,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // Usuário= USER
                         .requestMatchers("/users/me", "/users/me/**").hasAnyRole("USER", "ADMIN")
 
                         // Usuário= ADMIN
                         .requestMatchers(HttpMethod.GET, "/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
 
                         // Produtos
@@ -73,7 +75,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/appointments/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/appointments").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/appointments/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/appointments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/appointments/**").hasAnyRole("USER", "ADMIN")
 
                         .anyRequest().authenticated()
                 )

@@ -78,7 +78,7 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve buscar produto por ID com sucesso")
     void findById_success() {
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(product));
 
         ProductResponseDTO response = productService.findById(1L);
 
@@ -89,7 +89,7 @@ class ProductServiceTest {
     @Test
     @DisplayName("Deve lançar exceção ao buscar produto inexistente")
     void findById_notFound() {
-        when(productRepository.findById(999L)).thenReturn(Optional.empty());
+        when(productRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> productService.findById(999L))
                 .isInstanceOf(ProductNotFoundException.class);
@@ -100,7 +100,7 @@ class ProductServiceTest {
     void update_success() {
         ProductUpdateDTO dto = new ProductUpdateDTO(null, null, new BigDecimal("800.00"), 10, null);
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(product));
         when(productRepository.save(any(ProductModel.class))).thenReturn(product);
 
         ProductResponseDTO response = productService.update(1L, dto);
@@ -114,7 +114,7 @@ class ProductServiceTest {
     void update_notFound() {
         ProductUpdateDTO dto = new ProductUpdateDTO(null, null, null, 10, null);
 
-        when(productRepository.findById(999L)).thenReturn(Optional.empty());
+        when(productRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> productService.update(999L, dto))
                 .isInstanceOf(ProductNotFoundException.class);

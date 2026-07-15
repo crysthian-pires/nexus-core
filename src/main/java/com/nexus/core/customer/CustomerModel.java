@@ -18,12 +18,19 @@ public class CustomerModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String name;
 
+    @Column(length = 254)
     private String email;
+
+    @Column(length = 20)
     private String phone;
+
+    @Column(length = 14, unique = true)
     private String document;
+
+    @Column(length = 1000)
     private String notes;
 
     private boolean active = true;

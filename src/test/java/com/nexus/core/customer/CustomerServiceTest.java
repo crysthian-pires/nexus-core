@@ -83,10 +83,8 @@ class CustomerServiceTest {
     @Test
     @DisplayName("Deve buscar cliente por ID com sucesso")
     void findById_success() {
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-
+        when(customerRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(customer));
         CustomerResponseDTO response = customerService.findById(1L);
-
         assertThat(response).isNotNull();
         assertThat(response.id()).isEqualTo(1L);
     }
@@ -94,7 +92,7 @@ class CustomerServiceTest {
     @Test
     @DisplayName("Deve lançar exceção ao buscar cliente inexistente")
     void findById_notFound() {
-        when(customerRepository.findById(999L)).thenReturn(Optional.empty());
+        when(customerRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> customerService.findById(999L))
                 .isInstanceOf(CustomerNotFoundException.class);
@@ -105,7 +103,7 @@ class CustomerServiceTest {
     void update_success() {
         CustomerUpdateDTO dto = new CustomerUpdateDTO("João Atualizado", null, null, null, null);
 
-        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(customer));
         when(customerRepository.save(any(CustomerModel.class))).thenReturn(customer);
 
         CustomerResponseDTO response = customerService.update(1L, dto);
@@ -119,7 +117,7 @@ class CustomerServiceTest {
     void update_notFound() {
         CustomerUpdateDTO dto = new CustomerUpdateDTO("João", null, null, null, null);
 
-        when(customerRepository.findById(999L)).thenReturn(Optional.empty());
+        when(customerRepository.findByIdAndActiveTrue(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> customerService.update(999L, dto))
                 .isInstanceOf(CustomerNotFoundException.class);

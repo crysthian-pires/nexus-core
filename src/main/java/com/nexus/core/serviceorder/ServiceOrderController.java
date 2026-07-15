@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,7 +56,17 @@ public class ServiceOrderController {
     @PatchMapping("/{id}")
     public ResponseEntity<ServiceOrderResponseDTO> update(
             @PathVariable Long id,
-            @Valid @RequestBody ServiceOrderUpdateDTO dto) {
-        return ResponseEntity.ok(serviceOrderService.update(id, dto));
+            @Valid @RequestBody ServiceOrderUpdateDTO dto, Authentication authentication) {
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                return ResponseEntity.ok(serviceOrderService.update(id, dto, isAdmin));
+    }
+
+    @Operation(summary = "Cancelar OS")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancel(@PathVariable Long id, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        serviceOrderService.deactivate(id, isAdmin);
+        return ResponseEntity.noContent().build();
     }
 }
